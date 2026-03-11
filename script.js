@@ -1,232 +1,184 @@
-/*
-qui mi sono sbizzarrito, se avete sapete/avete voglia di toccare prego
-se non sapete cosa fate non toccate nulla 
+<!DOCTYPE html>
+<html lang="it">
 
-cmq qui c'è tutto il codice per far funzionare il sito
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mxRider Shop | Minimal Performance Gear</title>
+    <link rel="stylesheet" href="styles.css">
 
-*/
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
 
-
-// Stato     
-let currentUser = null;
-let activeCategory = 'all';
-let cart = [];
-let currentlyViewedProduct = null;
-
-// Elementi DOM
-const productList = document.getElementById('product-list');
-const filterChips = document.querySelectorAll('.filter-chip');
-const accountBtn = document.getElementById('account-btn');
-const accountModal = document.getElementById('account-modal');
-const productModal = document.getElementById('product-modal');
-const closeModals = document.querySelectorAll('.close-modal');
-
-const loginBox = document.getElementById('login-box');
-const signupBox = document.getElementById('signup-box');
-const profileBox = document.getElementById('profile-box');
-const toSignup = document.getElementById('to-signup');
-const toLogin = document.getElementById('to-login');
-
-const cartBadge = document.querySelector('.badge');
-const cartItemsContainer = document.getElementById('cart-items');
-const cartTotalElement = document.getElementById('cart-total');
-
-// inizializzazione
-function init() {
-    renderProducts(productsData);
-    setupEventListeners();
-    setupCart();
-}
-
-function renderProducts(items) {
-    productList.innerHTML = '';
-    items.forEach(product => {
-        const card = document.createElement('div');
-        card.className = 'product-card';
-        card.innerHTML = `
-            <div class="product-img-wrapper">
-                <img src="${product.image}" alt="${product.name}">
+<body>
+    <nav class="navbar">
+        <div class="container nav-content">
+            <div class="logo">mxRIDER<span>SHOP</span></div>
+            <div class="nav-links">
+                <a href="#shop">Shop</a>
+                <a href="#garage">Il Mio Garage</a>
+                <a href="#support">Assistenza</a>
             </div>
-            <div class="card-meta">
-                <p class="category">${product.category}</p>
-                <p class="section-tag">${product.section}</p>
-            </div>
-            <h3>${product.name}</h3>
-            <div class="product-footer">
-                <p class="price">€${product.price.toFixed(2)}</p>
-                <button class="icon-btn add-to-cart-btn"><i data-lucide="plus-circle"></i></button>
-            </div>
-        `;
-        card.onclick = (e) => {
-            if (!e.target.closest('.add-to-cart-btn')) {
-                openProductDetail(product);
-            }
-        };
-        productList.appendChild(card);
-    });
-    lucide.createIcons();
-}
-
-function setupEventListeners() {
-    // filtri categorie
-    filterChips.forEach(chip => {
-        chip.addEventListener('click', () => {
-            filterChips.forEach(c => c.classList.remove('active'));
-            chip.classList.add('active');
-            activeCategory = chip.dataset.category;
-            applyFilters();
-        });
-    });
-
-    // account
-    accountBtn.onclick = () => {
-        accountModal.style.display = 'block';
-        updateAccountUI();
-    };
-
-    toSignup.onclick = (e) => {
-        e.preventDefault();
-        loginBox.classList.add('hidden');
-        signupBox.classList.remove('hidden');
-    };
-
-    toLogin.onclick = (e) => {
-        e.preventDefault();
-        signupBox.classList.add('hidden');
-        loginBox.classList.remove('hidden');
-    };
-
-    // login/registrazione
-    document.getElementById('btn-login').onclick = () => {
-        currentUser = { name: 'Mario Rossi' };
-        updateAccountUI();
-    };
-
-    document.getElementById('btn-signup').onclick = () => {
-        const name = signupBox.querySelector('input[type="text"]').value;
-        if (name) {
-            currentUser = { name };
-            updateAccountUI();
-        }
-    };
-
-    document.getElementById('logout-btn').onclick = () => {
-        currentUser = null;
-        updateAccountUI();
-    };
-
-    // newsletter
-    document.getElementById('newsletter-form').onsubmit = (e) => {
-        e.preventDefault();
-        alert('Grazie per esserti iscritto alla nostra newsletter!');
-        e.target.reset();
-    };
-
-    // chiusura modali
-    closeModals.forEach(btn => {
-        btn.onclick = () => {
-            accountModal.style.display = 'none';
-            productModal.style.display = 'none';
-        };
-    });
-
-    window.onclick = (event) => {
-        if (event.target == accountModal) accountModal.style.display = 'none';
-        if (event.target == productModal) productModal.style.display = 'none';
-    };
-}
-
-function applyFilters() {
-    let filtered = productsData;
-    if (activeCategory !== 'all') {
-        filtered = filtered.filter(p => p.category === activeCategory);
-    }
-    renderProducts(filtered);
-}
-
-function updateAccountUI() {
-    if (currentUser) {
-        loginBox.classList.add('hidden');
-        signupBox.classList.add('hidden');
-        profileBox.classList.remove('hidden');
-        document.getElementById('profile-name').innerText = currentUser.name;
-    } else {
-        profileBox.classList.add('hidden');
-        loginBox.classList.remove('hidden');
-    }
-}
-
-function openProductDetail(product) {
-    currentlyViewedProduct = product;
-    document.getElementById('modal-img').src = product.image;
-    document.getElementById('modal-title').innerText = product.name;
-    document.getElementById('modal-price').innerText = `€${product.price.toFixed(2)}`;
-
-    const specsList = document.getElementById('modal-specs');
-    specsList.innerHTML = product.specs.map(s => `<li>${s}</li>`).join('');
-
-    const reviewsDiv = document.getElementById('modal-reviews');
-    if (product.reviews.length > 0) {
-        reviewsDiv.innerHTML = product.reviews.map(r => `
-            <div class="review-item">
-                <p><strong>${r.user}</strong> - ${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</p>
-                <p>${r.comment}</p>
-            </div>
-        `).join('');
-    } else {
-        reviewsDiv.innerHTML = '<p class="text-dim">Ancora nessuna recensione.</p>';
-    }
-    productModal.style.display = 'block';
-}
-
-function setupCart() {
-    // aggiungi al carrello
-    document.addEventListener('click', (e) => {
-        const btn = e.target.closest('.add-to-cart-btn');
-        if (btn) {
-            const card = btn.closest('.product-card');
-            const name = card.querySelector('h3').innerText;
-            const product = productsData.find(p => p.name === name);
-            if (product) addToCart(product);
-        }
-    });
-
-    // aggiungi al carrello da modal
-    document.querySelector('.product-info-panel .btn-primary').onclick = () => {
-        if (currentlyViewedProduct) {
-            addToCart(currentlyViewedProduct);
-            productModal.style.display = 'none';
-        }
-    };
-}
-
-function addToCart(product) {
-    cart.push(product);
-    updateCartUI();
-
-    cartBadge.style.transform = 'scale(1.2)';
-    setTimeout(() => cartBadge.style.transform = 'scale(1)', 200);
-}
-
-function updateCartUI() {
-    cartBadge.innerText = cart.length;
-
-    if (cart.length === 0) {
-        cartItemsContainer.innerHTML = '<p class="empty-msg">Il carrello è vuoto</p>';
-    } else {
-        cartItemsContainer.innerHTML = cart.map((item) => `
-            <div class="cart-item">
-                <img src="${item.image}" alt="${item.name}">
-                <div class="cart-item-info">
-                    <h4>${item.name}</h4>
-                    <p>€${item.price.toFixed(2)}</p>
+            <div class="nav-actions">
+                <div class="search-bar">
+                    <i data-lucide="search"></i>
+                    <input type="text" placeholder="Cerca prodotto...">
+                </div>
+                <button id="account-btn" class="icon-btn"><i data-lucide="user"></i></button>
+                <div class="cart-container">
+                    <div id="cart-trigger" class="cart-btn icon-btn">
+                        <i data-lucide="shopping-bag"></i>
+                        <span class="badge">0</span>
+                    </div>
+                    <div id="cart-dropdown" class="cart-dropdown glass">
+                        <h3>Il Tuo Carrello</h3>
+                        <div id="cart-items" class="cart-items">
+                            <p class="empty-msg">Il carrello è vuoto</p>
+                        </div>
+                        <div class="cart-footer">
+                            <div class="total-row">
+                                <span>Totale:</span>
+                                <span id="cart-total">€ 0.00</span>
+                            </div>
+                            <button class="btn-primary checkout-btn">CHECKOUT</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-        `).join('');
-    }
+        </div>
+    </nav>
 
-    const total = cart.reduce((sum, item) => sum + item.price, 0);
-    cartTotalElement.innerText = `€ ${total.toFixed(2)}`;
-}
+    <header class="hero">
+        <div class="hero-bg"><img src="assets/hero.png" alt="Hero Bike"></div>
+        <div class="container hero-content">
+            <h1>DOMINA LA STRADA</h1>
+            <p>Componenti e gear d'élite per veri rider.</p>
+            <a href="#shop" class="btn-primary">SCOPRI LA COLLEZIONE</a>
+        </div>
+    </header>
 
-init();
+    <section id="shop" class="container shop-section">
+        <div class="section-header">
+            <h2>I NOSTRI PRODOTTI</h2>
+            <div class="filters">
+                <button class="filter-chip active" data-category="all">Tutti</button>
+                <button class="filter-chip" data-category="helmets">Caschi</button>
+                <button class="filter-chip" data-category="gear">Abbigliamento</button>
+                <button class="filter-chip" data-category="parts">Ricambi</button>
+            </div>
+        </div>
+        <div class="product-grid" id="product-list">
+            <!-- Products injected by JS -->
+        </div>
+    </section>
+
+    <section class="newsletter-section">
+        <div class="container newsletter-content">
+            <div class="newsletter-text">
+                <h2>Rimani aggiornato</h2>
+                <p>Iscriviti per ricevere offerte esclusive e novità dal mondo mxRider.</p>
+            </div>
+            <form id="newsletter-form" class="newsletter-form">
+                <input type="email" placeholder="Il tuo indirizzo email" required>
+                <button type="submit" class="btn-primary">ISCRIVITI</button>
+            </form>
+        </div>
+    </section>
+
+    <footer id="support">
+        <div class="container footer-grid">
+            <div class="footer-info">
+                <div class="logo">mxRIDER</div>
+                <p>La tua destinazione per il motocross di alta qualità.</p>
+            </div>
+            <ul class="footer-links">
+                <li>
+                    <h4>Shop</h4>
+                </li>
+                <li><a href="#">Nuovi Arrivi</a></li>
+                <li><a href="#">Bestseller</a></li>
+                <li><a href="#">Offerte</a></li>
+            </ul>
+            <ul class="footer-links">
+                <li>
+                    <h4>Assistenza</h4>
+                </li>
+                <li><a href="#">Contattaci</a></li>
+                <li><a href="#">FAQ</a></li>
+                <li><a href="#">Spedizioni</a></li>
+            </ul>
+            <div class="footer-social">
+                <h4>Social</h4>
+                <div class="social-icons">
+                    <i data-lucide="instagram"></i>
+                    <i data-lucide="facebook"></i>
+                    <i data-lucide="twitter"></i>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 mxRider Shop. Tutti i diritti riservati.</p>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    <div id="account-modal" class="modal">
+        <div class="modal-content glass">
+            <span class="close-modal">&times;</span>
+            <div class="auth-box" id="login-box">
+                <h2>Bentornato Rider</h2>
+                <input type="email" placeholder="Email">
+                <input type="password" placeholder="Password">
+                <button class="btn-primary" id="btn-login">ACCEDI</button>
+                <p>Non hai un account? <a href="#" id="to-signup">Registrati</a></p>
+            </div>
+            <div class="auth-box hidden" id="signup-box">
+                <h2>Unisciti al Team</h2>
+                <input type="text" placeholder="Nome">
+                <input type="email" placeholder="Email">
+                <button class="btn-primary" id="btn-signup">REGISTRATI</button>
+                <p>Hai già un account? <a href="#" id="to-login">Accedi</a></p>
+            </div>
+            <div class="auth-box hidden" id="profile-box">
+                <h2>Il Tuo Profilo</h2>
+                <div class="profile-details">
+                    <p><strong>Nome:</strong> <span id="profile-name"></span></p>
+                </div>
+                <button class="btn-secondary" id="logout-btn">LOGOUT</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="product-modal" class="modal">
+        <div class="modal-content glass product-detail-content">
+            <span class="close-modal">&times;</span>
+            <div class="product-detail-grid">
+                <div class="product-image-large">
+                    <img id="modal-img" src="" alt="">
+                </div>
+                <div class="product-info-panel">
+                    <h2 id="modal-title"></h2>
+                    <p class="price" id="modal-price"></p>
+                    <div class="specs">
+                        <h4>Specifiche Tecniche</h4>
+                        <ul id="modal-specs"></ul>
+                    </div>
+                    <div class="reviews">
+                        <h4>Recensioni</h4>
+                        <div id="modal-reviews"></div>
+                    </div>
+                    <button class="btn-primary">AGGIUNGI AL CARRELLO</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="products.js"></script>
+    <script src="script.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>
